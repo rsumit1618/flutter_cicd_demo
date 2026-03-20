@@ -29,6 +29,10 @@ jobs:
         run: |
           echo "${{ secrets.ENV_PROD_BASE64 }}" | base64 --decode > .env.prod
 
+      - name: Setup ENV DEV
+        run: |
+          echo "${{ secrets.ENV_DEV_BASE64 }}" | base64 --decode > .env.dev
+
       # 🔐 Firebase PROD config
       - name: Setup Firebase
         run: |
