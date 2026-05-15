@@ -18,7 +18,9 @@ migrate_working_dir/
 *.iws
 .idea/
 
+# Environment files (never commit secrets)
 .env*
+!.env.example
 
 # The .vscode folder contains launch configuration and tasks you configure in
 # VS Code which you may wish to be included in version control, so this line
@@ -45,3 +47,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Test and Coverage
+coverage/
+.nyc_output/
+
+# Generated files
+*.g.dart
+*.config.dart
