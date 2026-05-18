@@ -1,0 +1,73 @@
+#!/bin/bash
+
+# Pre-commit Hook - Blocks commits containing secrets
+# Install with: cp docs/hooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+
+set -e
+
+echo "🔍 Running security pre-commit hook..."
+
+# Define secret patterns to search for
+PATTERNS=(
+    "password\s*[:=]"
+    "api_key\s*[:=]"
+    "apiKey\s*[:=]"
+    "secret\s*[:=]"
+    "token\s*[:=]"
+    "api_secret"
+    "AWS_SECRET"
+    "AIza[0-9A-Za-z-]*"  # Firebase API Key pattern
+    "AKIA[0-9A-Z]\{16\}"  # AWS Access Key ID
+    "private_key"
+    "BEGIN RSA PRIVATE KEY"
+    "BEGIN PRIVATE KEY"
+)
+
+FOUND_SECRETS=0
+STAGED_FILES=$(git diff --cached --name-only)
+
+for FILE in $STAGED_FILES; do
+    # Skip binary files
+    if file "$FILE" | grep -q "binary"; then
+        continue
+    fi
+    
+    # Skip .example files
+    if [[ "$FILE" == *.example ]]; then
+        continue
+    fi
+    
+    for PATTERN in "${PATTERNS[@]}"; do
+        if git diff --cached "$FILE" | grep -E "$PATTERN" > /dev/null 2>&1; then
+            if [ $FOUND_SECRETS -eq 0 ]; then
+                echo ""
+                echo "❌ SECURITY WARNING: Potential secret(s) found in staged files!"
+                echo ""
+            fi
+            echo "  File: $FILE"
+            echo "  Pattern: $PATTERN"
+            git diff --cached "$FILE" | grep -n -E "$PATTERN" | head -3
+            echo ""
+            FOUND_SECRETS=1
+        fi
+    done
+done
+
+if [ $FOUND_SECRETS -eq 1 ]; then
+    echo "🚨 COMMIT BLOCKED: Found potential secret(s)"
+    echo ""
+    echo "What to do:"
+    echo "  1. Review files listed above"
+    echo "  2. Remove hardcoded secrets"
+    echo "  3. Use environment variables or .env.example"
+    echo "  4. Add to .gitignore if needed"
+    echo "  5. Run 'git reset' and try again"
+    echo ""
+    echo "To bypass (NOT RECOMMENDED):"
+    echo "  git commit --no-verify"
+    echo ""
+    exit 1
+fi
+
+echo "✅ No secrets detected. Commit allowed."
+exit 0
